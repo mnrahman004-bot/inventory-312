@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Prediction — StockSense IMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .ai-header {
+      background: linear-gradient(135deg, rgba(233,69,96,0.1), rgba(56,189,248,0.1));
+      border: 1px solid rgba(233,69,96,0.2);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      display: flex; align-items: center; gap: 24px;
+    }
+    .ai-icon { font-size: 56px; }
+    .ai-header h2 { font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 6px; }
+    .ai-header p { color: var(--text-muted); font-size: 14px; }
+    .predict-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .mini-bar {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; margin-top: 8px;
+    }
+    .mini-bar-track {
+      flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+    }
+    .mini-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/layout.js"></script>
+
+<script>
+(async () => {
+  await checkAuth();
+  renderLayout('/predict', '🤖 AI Demand Prediction', `
+    <div class="ai-header">
+      <div class="ai-icon">🤖</div>
+      <div>
+        <h2>ML Demand Forecasting</h2>
+        <p>Using linear regression trained on 90 days of historical sales data to predict next week's product demand and suggest optimal reorder quantities.</p>
+        <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
+          <span class="badge badge-danger">🔴 Critical — reorder immediately</span>
+          <span class="badge badge-warning">🟡 Low — plan reorder soon</span>
+          <span class="badge badge-success">🟢 Sufficient — stock is adequate</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-bar">
+      <h3 style="font-family:'Syne',sans-serif;">Weekly Demand Predictions</h3>
+      <button class="btn btn-primary" onclick="loadPredictions()">🔄 Refresh Predictions</button>
+    </div>
+
+    <div id="predictions-area">
+      <div class="loading-center">
+        <div style="text-align:center;">
+          <div class="spinner" style="margin:0 auto 16px;"></div>
+          <div style="color:var(--text-muted);">Training ML model & generating predictions...</div>
+        </div>
+      </div>
+    </div>
+  `);
+
+  loadPredictions();
+})();
+
+async function loadPredictions() {
+  const area = document.getElementById('predictions-area');
+  area.innerHTML = `<div class="loading-center"><div style="text-align:center;"><div class="spinner" style="margin:0 auto 16px;"></div><div style="color:var(--text-muted);">Training ML model & generating predictions...</div></div></div>`;
+
+  const r = await apiFetch('/predict');
+  if (!r || !r.ok) {
+    area.innerHTML = `<div class="alert alert-danger">Failed to generate predictions. Make sure there's enough historical sales data.</div>`;
+    return;
+  }
+
+  const preds = r.data;
+  if (!preds.length) {
+    area.innerHTML = `<div class="empty-state"><div class="icon">🤖</div><h4>Not enough data</h4><p>Record more sales to enable AI predictions (minimum 5 days of history per product).</p></div>`;
+    return;
+  }
+
+  const statusClass = { Critical: 'critical', Low: 'low', Sufficient: 'sufficient' };
+  const statusBadge = { Critical: 'badge-danger', Low: 'badge-warning', Sufficient: 'badge-success' };
+  const statusIcon = { Critical: '🔴', Low: '🟡', Sufficient: '🟢' };
+
+  // Summary stats
+  const critical = preds.filter(p => p.status === 'Critical').length;
+  const low = preds.filter(p => p.status === 'Low').length;
+  const sufficient = preds.filter(p => p.status === 'Sufficient').length;
+
+  let html = `
+    <div class="stats-grid" style="margin-bottom:24px;">
+      <div class="stat-card red">
+        <div class="stat-icon">🔴</div>
+        <div class="stat-value">${critical}</div>
+        <div class="stat-label">Critical Items</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon">🟡</div>
+        <div class="stat-value">${low}</div>
+        <div class="stat-label">Low Stock Items</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-value">${sufficient}</div>
+        <div class="stat-label">Sufficient Stock</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value">${preds.length}</div>
+        <div class="stat-label">Products Analyzed</div>
+      </div>
+    </div>
+    <div class="predict-grid">
+  `;
+
+  preds.forEach(p => {
+    const maxDemand = Math.max(...preds.map(x => x.predicted_weekly_demand), 1);
+    const barWidth = Math.round((p.predicted_weekly_demand / maxDemand) * 100);
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    html += `
+      <div class="predict-card ${statusClass[p.status] || ''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">${p.product_name}</div>
+            <div style="font-size:12px;color:var(--text-muted);">Product #${p.product_id}</div>
+          </div>
+          <span class="badge ${statusBadge[p.status]}">${statusIcon[p.status]} ${p.status}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Current Stock</div>
+            <div style="font-size:20px;font-weight:700;color:${p.current_stock <= 5 ? 'var(--danger)' : 'var(--text)'};">${p.current_stock}</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Predicted Demand</div>
+            <div style="font-size:20px;font-weight:700;color:var(--info);">${p.predicted_weekly_demand}</div>
+          </div>
+        </div>
+
+        ${p.reorder_quantity > 0 ? `
+        <div style="background:rgba(233,69,96,0.08);border:1px solid rgba(233,69,96,0.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">💡 AI Recommendation</div>
+          <div style="font-weight:700;color:var(--accent);">Reorder <strong>${p.reorder_quantity} units</strong></div>
+        </div>` : `
+        <div style="background:rgba(0,214,143,0.08);border:1px solid rgba(0,214,143,0.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div style="font-size:13px;color:var(--success);">✅ Stock sufficient for predicted demand</div>
+        </div>`}
+
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Weekly forecast (units/day):</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">
+          ${(p.daily_predictions || []).map((v, i) => `
+            <div style="text-align:center;">
+              <div style="height:${Math.max(8, Math.round(v * 4))}px;background:var(--accent);opacity:0.6;border-radius:2px;margin-bottom:3px;"></div>
+              <div style="font-size:10px;color:var(--text-muted);">${days[i]||''}</div>
+              <div style="font-size:10px;">${v}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="mini-bar">
+          <span style="color:var(--text-muted);width:60px;">Stock</span>
+          <div class="mini-bar-track">
+            <div class="mini-bar-fill" style="width:${barWidth}%;background:${p.status==='Critical'?'var(--danger)':p.status==='Low'?'var(--warning)':'var(--success)'};"></div>
+          </div>
+          <span>${barWidth}%</span>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  area.innerHTML = html;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Inventory Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="static/css/style.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f7fa;
+        }
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px 0;
+            position: fixed;
+            width: 250px;
+            left: 0;
+            top: 0;
+        }
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            margin: 0;
+        }
+        .sidebar-menu a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 15px 20px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+        }
+        .sidebar-menu a:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: white;
+        }
+        .sidebar-menu a.active {
+            background: rgba(255,255,255,0.2);
+            border-left-color: white;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .low-stock-alert {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .alert-icon {
+            color: #ff6b6b;
+            margin-right: 10px;
+        }
+        .topbar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .btn-logout {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-logout:hover {
+            background: #ff5252;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                min-height: auto;
+                position: static;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            📦 IMS
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="/products"><i class="fas fa-box"></i> Products</a></li>
+            <li><a href="/sales"><i class="fas fa-shopping-cart"></i> Sales</a></li>
+            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+            <li><a href="/login" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h2>Dashboard</h2>
+            <div class="user-menu">
+                <span id="userName">Admin</span>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Low Stock Alert -->
+        <div id="lowStockAlert"></div>
+
+        <!-- Statistics Cards -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalProducts">0</div>
+                    <div class="stat-label">Total Products</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="lowStockCount">0</div>
+                    <div class="stat-label">Low Stock Items</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="todaySales">$0</div>
+                    <div class="stat-label">Today's Sales</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSuppliers">0</div>
+                    <div class="stat-label">Total Suppliers</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row" style="margin-top: 30px;">
+            <div class="col-md-8">
+                <div class="chart-container">
+                    <h5>Sales Trend (Last 7 Days)</h5>
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-container">
+                    <h5>Transactions Today</h5>
+                    <div id="todayTransactions" style="text-align: center; padding: 40px; font-size: 40px; font-weight: bold; color: #667eea;">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let salesChart = null;
+
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '/login';
+            }
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                document.getElementById('userName').textContent = user.username;
+            }
+        }
+
+        // Load dashboard data
+        async function loadDashboard() {
+            checkAuth();
+            const token = localStorage.getItem('access_token');
+            
+            try {
+                // Load summary
+                const summaryRes = await fetch(`${API_BASE}/dashboard/summary`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const summary = await summaryRes.json();
+                
+                document.getElementById('totalProducts').textContent = summary.total_products;
+                document.getElementById('lowStockCount').textContent = summary.low_stock_count;
+                document.getElementById('todaySales').textContent = '$' + summary.today_sales.toFixed(2);
+                document.getElementById('totalSuppliers').textContent = summary.total_suppliers;
+                document.getElementById('todayTransactions').textContent = summary.today_transactions;
+
+                // Load low stock products
+                if (summary.low_stock_count > 0) {
+                    const alertHTML = `
+                        <div class="low-stock-alert">
+                            <span class="alert-icon">⚠️</span>
+                            <strong>${summary.low_stock_count} products</strong> are running low on stock!
+                        </div>
+                    `;
+                    document.getElementById('lowStockAlert').innerHTML = alertHTML;
+                }
+
+                // Load sales chart
+                const chartRes = await fetch(`${API_BASE}/dashboard/sales-chart?days=7`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const chartData = await chartRes.json();
+                loadSalesChart(chartData);
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        function loadSalesChart(data) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: 'Daily Sales ($)',
+                        data: data.map(d => d.sales),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        // Load on page load
+        loadDashboard();
+        setInterval(loadDashboard, 30000); // Refresh every 30 seconds
+    </script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales - Inventory Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="static/css/style.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f7fa; }
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px 0;
+            position: fixed;
+            width: 250px;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; }
+        .sidebar-menu a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 15px 20px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background: rgba(255,255,255,0.2);
+            border-left-color: white;
+        }
+        .main-content { margin-left: 250px; padding: 20px; }
+        .topbar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn-add { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: static; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">📦 IMS</div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="/products"><i class="fas fa-box"></i> Products</a></li>
+            <li><a href="/sales" class="active"><i class="fas fa-shopping-cart"></i> Sales</a></li>
+            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
+            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
+            <li><a href="/login" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar">
+            <h2>Sales Management</h2>
+            <button class="btn-add" onclick="openSaleModal()">+ New Sale</button>
+        </div>
+
+        <div id="alertMessage"></div>
+
+        <div class="table-container">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                        <th>Customer</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="salesTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- New Sale Modal -->
+    <div class="modal fade" id="saleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Record Sale</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saleForm">
+                        <div class="mb-3">
+                            <label for="product" class="form-label">Product</label>
+                            <select class="form-control" id="product" required>
+                                <option value="">Select Product</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer" class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" id="customer" value="Walk-in Customer">
+                        </div>
+                        <div class="mb-3">
+                            <label for="payment" class="form-label">Payment Method</label>
+                            <select class="form-control" id="payment">
+                                <option>Cash</option>
+                                <option>Card</option>
+                                <option>Check</option>
+                                <option>Mobile Money</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Record Sale</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        function checkAuth() {
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = '/login';
+            }
+        }
+
+        function getHeaders() {
+            return { Authorization: `Bearer ${localStorage.getItem('access_token')}` };
+        }
+
+        async function loadSales() {
+            try {
+                const res = await fetch(`${API_BASE}/sales`, { headers: getHeaders() });
+                const data = await res.json();
+                
+                const tbody = document.getElementById('salesTable');
+                tbody.innerHTML = '';
+                
+                data.sales.forEach(sale => {
+                    const date = new Date(sale.created_at).toLocaleDateString();
+                    const row = `
+                        <tr>
+                            <td>${sale.invoice_number}</td>
+                            <td>${date}</td>
+                            <td>${sale.product_name}</td>
+                            <td>${sale.quantity}</td>
+                            <td>$${sale.unit_price.toFixed(2)}</td>
+                            <td>$${sale.total_amount.toFixed(2)}</td>
+                            <td>${sale.customer_name}</td>
+                            <td>${sale.payment_method}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="printInvoice('${sale.invoice_number}')">Print</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                showAlert('Error loading sales: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API_BASE}/products`, { headers: getHeaders() });
+                const data = await res.json();
+                
+                const select = document.getElementById('product');
+                data.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (Stock: ${product.quantity})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        function openSaleModal() {
+            document.getElementById('saleForm').reset();
+            new bootstrap.Modal(document.getElementById('saleModal')).show();
+        }
+
+        document.getElementById('saleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const saleData = {
+                product_id: document.getElementById('product').value,
+                quantity: document.getElementById('quantity').value,
+                customer_name: document.getElementById('customer').value,
+                payment_method: document.getElementById('payment').value,
+                notes: document.getElementById('notes').value
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/sales`, {
+                    method: 'POST',
+                    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify(saleData)
+                });
+
+                if (res.ok) {
+                    const result = await res.json();
+                    showAlert(`Sale recorded successfully! Invoice: ${result.invoice_number}`, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('saleModal')).hide();
+                    loadSales();
+                } else {
+                    const data = await res.json();
+                    showAlert(data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('Error recording sale: ' + error.message, 'danger');
+            }
+        });
+
+        async function printInvoice(invoiceNumber) {
+            const sales = await fetch(`${API_BASE}/sales`, { headers: getHeaders() });
+            const data = await sales.json();
+            const sale = data.sales.find(s => s.invoice_number === invoiceNumber);
+            
+            if (!sale) return;
+
+            const printWindow = window.open('', '', 'height=500,width=800');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Invoice ${invoiceNumber}</title>
+                    <style>
+                        body { font-family: Arial; margin: 20px; }
+                        .invoice-header { text-align: center; margin-bottom: 30px; }
+                        .invoice-details { margin: 20px 0; }
+                        .line { display: flex; justify-content: space-between; padding: 5px 0; }
+                        .total { font-size: 18px; font-weight: bold; margin-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-header">
+                        <h2>📦 Inventory Management System</h2>
+                        <p>Invoice ${invoiceNumber}</p>
+                    </div>
+                    <div class="invoice-details">
+                        <div class="line">
+                            <span>Date:</span>
+                            <span>${new Date(sale.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="line">
+                            <span>Customer:</span>
+                            <span>${sale.customer_name}</span>
+                        </div>
+                        <hr>
+                        <div class="line">
+                            <span>Product:</span>
+                            <span>${sale.product_name}</span>
+                        </div>
+                        <div class="line">
+                            <span>Quantity:</span>
+                            <span>${sale.quantity}</span>
+                        </div>
+                        <div class="line">
+                            <span>Unit Price:</span>
+                            <span>$${sale.unit_price.toFixed(2)}</span>
+                        </div>
+                        <hr>
+                        <div class="line total">
+                            <span>Total Amount:</span>
+                            <span>$${sale.total_amount.toFixed(2)}</span>
+                        </div>
+                        <div class="line">
+                            <span>Payment Method:</span>
+                            <span>${sale.payment_method}</span>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.print();
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertMessage');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.innerHTML = '';
+            container.appendChild(alert);
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+
+        checkAuth();
+        loadProducts();
+        loadSales();
+    </script>
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Inventory Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="static/css/style.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f7fa; }
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px 0;
+            position: fixed;
+            width: 250px;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+        .sidebar-logo {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; }
+        .sidebar-menu a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 15px 20px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background: rgba(255,255,255,0.2);
+            border-left-color: white;
+        }
+        .main-content { margin-left: 250px; padding: 20px; }
+        .topbar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .report-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .btn-export {
+            background: #51cf66;
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: static; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-logo">📦 IMS</div>
+        <ul class="sidebar-menu">
+            <li><a href="/dashboard"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="/products"><i class="fas fa-box"></i> Products</a></li>
+            <li><a href="/sales"><i class="fas fa-shopping-cart"></i> Sales</a></li>
+            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
+            <li><a href="/reports" class="active"><i class="fas fa-file-alt"></i> Reports</a></li>
+            <li><a href="/login" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar">
+            <h2>Reports & Analytics</h2>
+        </div>
+
+        <div id="alertMessage"></div>
+
+        <!-- Daily Sales Report -->
+        <div class="report-card">
+            <h4>Daily Sales Report</h4>
+            <div class="row" style="margin-top: 15px;">
+                <div class="col-md-6">
+                    <label>Select Date:</label>
+                    <input type="date" id="dailyDate" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label>&nbsp;</label>
+                    <button class="form-control btn btn-primary" onclick="loadDailySalesReport()">Generate Report</button>
+                </div>
+            </div>
+            <div class="table-container" id="dailyReportTable" style="display:none;"></div>
+        </div>
+
+        <!-- Monthly Sales Report -->
+        <div class="report-card">
+            <h4>Monthly Sales Report</h4>
+            <div class="row" style="margin-top: 15px;">
+                <div class="col-md-3">
+                    <label>Year:</label>
+                    <input type="number" id="monthYear" class="form-control" value="2024">
+                </div>
+                <div class="col-md-3">
+                    <label>Month:</label>
+                    <select id="monthSelect" class="form-control">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label>&nbsp;</label>
+                    <button class="form-control btn btn-primary" onclick="loadMonthlySalesReport()">Generate Report</button>
+                </div>
+            </div>
+            <div class="table-container" id="monthlyReportTable" style="display:none;"></div>
+        </div>
+
+        <!-- Product Sales Report -->
+        <div class="report-card">
+            <h4>Product Sales Report</h4>
+            <div class="row" style="margin-top: 15px;">
+                <div class="col-md-6">
+                    <label>Filter by Product (Optional):</label>
+                    <select id="productFilter" class="form-control">
+                        <option value="">All Products</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label>&nbsp;</label>
+                    <button class="form-control btn btn-primary" onclick="loadProductSalesReport()">Generate Report</button>
+                </div>
+            </div>
+            <button class="btn btn-export" style="margin-top: 10px;" onclick="exportToCSV()">📥 Export to CSV</button>
+            <div class="table-container" id="productReportTable" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+
+        // Set today's date as default
+        document.getElementById('dailyDate').valueAsDate = new Date();
+
+        // Set current month as default
+        const now = new Date();
+        document.getElementById('monthYear').value = now.getFullYear();
+        document.getElementById('monthSelect').value = (now.getMonth() + 1).toString();
+
+        function checkAuth() {
+            if (!localStorage.getItem('access_token')) {
+                window.location.href = '/login';
+            }
+        }
+
+        function getHeaders() {
+            return { Authorization: `Bearer ${localStorage.getItem('access_token')}` };
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API_BASE}/products`, { headers: getHeaders() });
+                const data = await res.json();
+                
+                const select = document.getElementById('productFilter');
+                data.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = product.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        async function loadDailySalesReport() {
+            const date = document.getElementById('dailyDate').value;
+            if (!date) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/reports/daily-sales?date=${date}`, {
+                    headers: getHeaders()
+                });
+                const data = await res.json();
+
+                let html = `
+                    <h5>Daily Sales Report - ${data.date}</h5>
+                    <div style="margin: 15px 0;">
+                        <strong>Total Sales:</strong> $${data.total_sales.toFixed(2)} | 
+                        <strong>Total Quantity Sold:</strong> ${data.total_quantity} | 
+                        <strong>Transactions:</strong> ${data.number_of_transactions}
+                    </div>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Customer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.sales.forEach(sale => {
+                    html += `
+                        <tr>
+                            <td>${sale.invoice_number}</td>
+                            <td>${sale.product_name}</td>
+                            <td>${sale.quantity}</td>
+                            <td>$${sale.unit_price.toFixed(2)}</td>
+                            <td>$${sale.total_amount.toFixed(2)}</td>
+                            <td>${sale.customer_name}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                document.getElementById('dailyReportTable').innerHTML = html;
+                document.getElementById('dailyReportTable').style.display = 'block';
+            } catch (error) {
+                showAlert('Error loading daily report: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadMonthlySalesReport() {
+            const year = document.getElementById('monthYear').value;
+            const month = document.getElementById('monthSelect').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/reports/monthly-sales?year=${year}&month=${month}`, {
+                    headers: getHeaders()
+                });
+                const data = await res.json();
+
+                let html = `
+                    <h5>Monthly Sales Report - ${data.period}</h5>
+                    <div style="margin: 15px 0;">
+                        <strong>Total Sales:</strong> $${data.total_sales.toFixed(2)} | 
+                        <strong>Total Quantity Sold:</strong> ${data.total_quantity} | 
+                        <strong>Transactions:</strong> ${data.number_of_transactions}
+                    </div>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Daily Sales</th>
+                                <th>Quantity</th>
+                                <th>Transactions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                Object.entries(data.daily_breakdown).forEach(([date, info]) => {
+                    html += `
+                        <tr>
+                            <td>${date}</td>
+                            <td>$${info.sales.toFixed(2)}</td>
+                            <td>${info.quantity}</td>
+                            <td>${info.transactions}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                document.getElementById('monthlyReportTable').innerHTML = html;
+                document.getElementById('monthlyReportTable').style.display = 'block';
+            } catch (error) {
+                showAlert('Error loading monthly report: ' + error.message, 'danger');
+            }
+        }
+
+        async function loadProductSalesReport() {
+            const productId = document.getElementById('productFilter').value;
+            const url = productId ? 
+                `${API_BASE}/reports/product-sales?product_id=${productId}` : 
+                `${API_BASE}/reports/product-sales`;
+
+            try {
+                const res = await fetch(url, { headers: getHeaders() });
+                const data = await res.json();
+
+                let html = `
+                    <h5>Product Sales Report - ${data.product_name}</h5>
+                    <div style="margin: 15px 0;">
+                        <strong>Total Sales Amount:</strong> $${data.total_sales.toFixed(2)}
+                    </div>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Transactions</th>
+                                <th>Total Quantity Sold</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                Object.entries(data.product_sales).forEach(([_, info]) => {
+                    html += `
+                        <tr>
+                            <td>${info.name}</td>
+                            <td>${info.transactions}</td>
+                            <td>${info.total_quantity}</td>
+                            <td>$${info.total_amount.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                document.getElementById('productReportTable').innerHTML = html;
+                document.getElementById('productReportTable').style.display = 'block';
+            } catch (error) {
+                showAlert('Error loading product report: ' + error.message, 'danger');
+            }
+        }
+
+        async function exportToCSV() {
+            const startDate = document.getElementById('dailyDate').value;
+            
+            try {
+                const res = await fetch(`${API_BASE}/reports/export-csv?start_date=${startDate}`, {
+                    headers: getHeaders()
+                });
+                const data = await res.json();
+
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(data.csv_data));
+                element.setAttribute('download', data.filename);
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+
+                showAlert('Report exported successfully!', 'success');
+            } catch (error) {
+                showAlert('Error exporting report: ' + error.message, 'danger');
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertMessage');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            container.innerHTML = '';
+            container.appendChild(alert);
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+
+        checkAuth();
+        loadProducts();
+    </script>
+</body>
+</html>

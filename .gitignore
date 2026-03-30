@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+database/inventory.db
+.env
+*.egg-info/
+dist/
+build/
+.DS_Store
+*.log
+flask_session/
