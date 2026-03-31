@@ -51,14 +51,15 @@
         <button class="btn-login" onclick="goToLogin()">Get Started</button>
     </div>
 
+    <script src="static/js/config.js"></script>
     <script>
         function goToLogin() {
-            window.location.href = '/login';
+            window.location.href = 'login.html';
         }
 
         // Redirect if already logged in
         if (localStorage.getItem('access_token')) {
-            window.location.href = '/dashboard';
+            window.location.href = 'dashboard.html';
         }
     </script>
 </body>

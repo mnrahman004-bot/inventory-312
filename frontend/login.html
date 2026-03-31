@@ -131,8 +131,9 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="static/js/config.js"></script>
     <script>
-        const API_BASE = 'http://localhost:5000/api';
+        
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -152,7 +153,7 @@
                     localStorage.setItem('access_token', data.access_token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     showAlert('Login successful! Redirecting...', 'success');
-                    setTimeout(() => window.location.href = '/dashboard', 1500);
+                    setTimeout(() => window.location.href = 'dashboard.html', 1500);
                 } else {
                     showAlert(data.message, 'danger');
                 }
@@ -206,7 +207,7 @@
 
         // Check if already logged in
         if (localStorage.getItem('access_token')) {
-            window.location.href = '/dashboard';
+            window.location.href = 'dashboard.html';
         }
     </script>
 </body>

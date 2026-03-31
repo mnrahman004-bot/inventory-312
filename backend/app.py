@@ -10,12 +10,11 @@ import os
 
 def create_app():
     """Application factory"""
-    app = Flask(__name__, 
-                template_folder='../frontend',
-                static_folder='../frontend/static')
+    app = Flask(__name__)
     
-    # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///../database/inventory.db'
+    import os
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '../database/inventory.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=30)
@@ -54,34 +53,10 @@ def create_app():
         db.session.rollback()
         return jsonify({'message': 'Internal server error', 'error': str(error)}), 500
     
-    # Serve frontend pages
+    # Root API endpoint
     @app.route('/')
     def index():
-        return render_template('index.html')
-    
-    @app.route('/login')
-    def login():
-        return render_template('login.html')
-    
-    @app.route('/dashboard')
-    def dashboard():
-        return render_template('dashboard.html')
-    
-    @app.route('/products')
-    def products():
-        return render_template('products.html')
-    
-    @app.route('/sales')
-    def sales():
-        return render_template('sales.html')
-    
-    @app.route('/suppliers')
-    def suppliers():
-        return render_template('suppliers.html')
-    
-    @app.route('/reports')
-    def reports():
-        return render_template('reports.html')
+        return jsonify({'message': 'Inventory Management API is running', 'status': 'success'})
     
     return app
 

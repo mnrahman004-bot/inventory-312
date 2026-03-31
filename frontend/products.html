@@ -81,12 +81,12 @@
     <div class="sidebar">
         <div class="sidebar-logo">📦 IMS</div>
         <ul class="sidebar-menu">
-            <li><a href="/dashboard"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-            <li><a href="/products" class="active"><i class="fas fa-box"></i> Products</a></li>
-            <li><a href="/sales"><i class="fas fa-shopping-cart"></i> Sales</a></li>
-            <li><a href="/suppliers"><i class="fas fa-truck"></i> Suppliers</a></li>
-            <li><a href="/reports"><i class="fas fa-file-alt"></i> Reports</a></li>
-            <li><a href="/login" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            <li><a href="dashboard.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="products.html" class="active"><i class="fas fa-box"></i> Products</a></li>
+            <li><a href="sales.html"><i class="fas fa-shopping-cart"></i> Sales</a></li>
+            <li><a href="suppliers.html"><i class="fas fa-truck"></i> Suppliers</a></li>
+            <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+            <li><a href="login.html" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </div>
 
@@ -192,16 +192,12 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="static/js/config.js"></script>
     <script>
-        const API_BASE = 'http://localhost:5000/api';
+        
         let editingProductId = null;
 
-        function checkAuth() {
-            if (!localStorage.getItem('access_token')) {
-                window.location.href = '/login';
-            }
-        }
-
+        
         function getHeaders() {
             return { Authorization: `Bearer ${localStorage.getItem('access_token')}` };
         }
@@ -401,11 +397,7 @@
             container.appendChild(alert);
         }
 
-        function logout() {
-            localStorage.removeItem('access_token');
-            window.location.href = '/login';
-        }
-
+        
         checkAuth();
         loadSuppliers();
         loadProducts();
